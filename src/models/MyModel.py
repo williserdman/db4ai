@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
-from models.heterophily_diffused_attention import DiffusedAttention
+from models.node_based_encoder import NodeBasedEncoder
 from pytorch_lightning.utilities import grad_norm
 
 
@@ -18,7 +18,7 @@ def _accuracy(logits: torch.Tensor, y: torch.Tensor) -> float:
 
 
 class MyModel(
-    DiffusedAttention,
+    NodeBasedEncoder,
     pl.LightningModule,
 ):
     def __init__(self, ds_info, learning_rate, **kwargs):
@@ -41,43 +41,17 @@ class MyModel(
         # it is independent of forward
 
         logits, inner_loss = self.forward(batch)
-        # compute loss only over training nodes
-        if hasattr(batch, "train_mask") and batch.train_mask is not None:
-            mask = batch.train_mask
-            loss = self.cse(logits[mask], batch.y[mask]) + inner_loss
-        else:
-            loss = self.cse(logits, batch.y) + inner_loss
-        # Logging to TensorBoard (if installed) by default
-        self.log("train_loss", loss)
-        return loss
+        return inner_loss
 
     def validation_step(self, batch):
         logits, inner_loss = self.forward(batch)
-        # compute metrics only over validation nodes
-        if hasattr(batch, "val_mask") and batch.val_mask is not None:
-            mask = batch.val_mask
-            loss = self.cse(logits[mask], batch.y[mask]) + inner_loss
-            acc = _accuracy(logits[mask], batch.y[mask])
-        else:
-            loss = self.cse(logits, batch.y) + inner_loss
-            acc = _accuracy(logits, batch.y)
 
-        self.log("val_loss", loss, prog_bar=True)
-        self.log("val_accuracy", acc, prog_bar=True)
+        self.log("val_loss", inner_loss, prog_bar=True)
 
     def test_step(self, batch):
         logits, inner_loss = self.forward(batch)
-        # compute metrics only over test nodes
-        if hasattr(batch, "test_mask") and batch.test_mask is not None:
-            mask = batch.test_mask
-            loss = self.cse(logits[mask], batch.y[mask]) + inner_loss
-            acc = _accuracy(logits[mask], batch.y[mask])
-        else:
-            loss = self.cse(logits, batch.y) + inner_loss
-            acc = _accuracy(logits, batch.y)
 
-        self.log("test_loss", loss)
-        self.log("test_accuracy", acc)
+        self.log("test_loss", inner_loss)
 
     def configure_optimizers(self, lr=1e-3):  # type: ignore
 

@@ -43,6 +43,7 @@ class OptunaTrainer:
         )
         dropout_rate = trial.suggest_float("dropout_rate", 0.0, 0.7)
         K = trial.suggest_categorical("K", [4, 8, 10])
+        flatten_size = trial.suggest_int("flatten_size", 2, 16)
 
         network = load_datasets([network_name])[network_name]
         network_info = _extract_network_info(network, network_name)
@@ -53,6 +54,7 @@ class OptunaTrainer:
             learning_rate=learning_rate,
             dropout_rate=dropout_rate,
             K=K,
+            flatten_size=flatten_size,
         )
 
         # Early stopping callback
@@ -89,8 +91,8 @@ class OptunaTrainer:
         # Final validation loss
         return trainer.callback_metrics["val_loss"].item()
 
-    def run_optimization(self, network_name, n_trials=20):
-        pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=10)
+    def run_optimization(self, network_name, n_trials=10):
+        pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=50)
         study = optuna.create_study(direction="minimize", pruner=pruner)
         study.optimize(
             lambda trial_num: self._objective(trial_num, network_name),
