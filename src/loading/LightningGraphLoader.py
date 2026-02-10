@@ -205,6 +205,7 @@ def _load_single_ds(name: str):
         data = ds[SPLIT_INDEX]
 
     # print(ds.num_features)
+    print(data)
     return (
         data,
         ds.num_features,

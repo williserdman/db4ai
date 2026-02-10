@@ -49,6 +49,7 @@ dependencies = [
     "multidict==6.6.4",
     "nest-asyncio==1.6.0",
     "networkx==3.5",
+    "notebook>=7.5.3",
     "numpy==2.3.3",
     "optuna==4.6.0",
     "optuna-integration==4.6.0",

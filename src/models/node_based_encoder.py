@@ -6,6 +6,7 @@ from torch_geometric.nn.conv.gcn_conv import gcn_norm
 from args import MyArgs
 from torch_geometric.utils import get_laplacian
 from typing import Optional
+import torch_geometric.nn as gnn
 
 
 class NodeBasedEncoder(nn.Module):
@@ -15,48 +16,38 @@ class NodeBasedEncoder(nn.Module):
         hidden_dim: int,
         dropout_rate: float,
         K: int,
-        flatten_size: int,
     ):
         super().__init__()
 
-        self.K = K  # args.K
         self.hidden_dim = hidden_dim
         self.num_classes = network_info.num_classes
         self.dropout_rate = dropout_rate
+        self.K = K
 
         self.encoder = nn.Linear(network_info.num_features, self.hidden_dim)
 
-        self.compress = nn.Sequential(
+        self.gcns = nn.ModuleList(
+            [
+                gnn.GCNConv(self.hidden_dim, self.hidden_dim, improved=True)
+                for _ in range(K)
+            ]
+        )
+        self.bns = nn.ModuleList([nn.BatchNorm1d(self.hidden_dim) for _ in range(K)])
+        self.lrs = nn.ModuleList([nn.LeakyReLU() for _ in range(K)])
+
+        self.mlp = nn.Sequential(
             nn.LayerNorm(self.hidden_dim),
             nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.LeakyReLU(),
-            nn.LayerNorm(self.hidden_dim),
-            nn.Linear(self.hidden_dim, flatten_size * 2),
-            nn.LeakyReLU(),
-            nn.LayerNorm(flatten_size * 2),
-            nn.Linear(flatten_size * 2, flatten_size),
-        )
-
-        self.decompress = nn.Sequential(
-            nn.LayerNorm(flatten_size),
-            nn.Linear(flatten_size, flatten_size * 2),
-            nn.LeakyReLU(),
-            nn.LayerNorm(flatten_size * 2),
-            nn.Linear(flatten_size * 2, self.hidden_dim),
-            nn.LeakyReLU(),
-            nn.LayerNorm(self.hidden_dim),
             nn.Linear(self.hidden_dim, self.hidden_dim),
         )
 
-        self.decoder = nn.Linear(self.hidden_dim, network_info.num_features)
+        self.decoder = nn.Linear(self.hidden_dim, network_info.num_classes)
 
         self.dropout = nn.Dropout(self.dropout_rate)
 
-        self.mse = nn.MSELoss()
-
     def reset_parameters(self):
-        self.encoder.reset_parameters()
-        self.decoder.reset_parameters()
+        return
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -71,10 +62,17 @@ class NodeBasedEncoder(nn.Module):
         # Laplacian
         # edge_index, edge_weight = get_laplacian(edge_index, edge_weight, num_nodes=N)  # type: ignore
 
-        compressed = self.compress(t)
-        decompressed = self.decompress(compressed)
-        decoded = self.decoder(decompressed)
+        x = self.encoder(x)
 
-        reconstruction_loss = self.mse(decoded, x)
+        for i in range(self.K):
+            xp = x.clone()
+            xp = self.gcns[i](xp, edge_index)
+            xp = self.bns[i](xp)
+            xp = self.lrs[i](xp)
+            x = self.dropout(xp + x)
 
-        return compressed, reconstruction_loss
+        out = self.decoder(self.mlp(x))
+
+        return F.log_softmax(out, dim=-1), torch.tensor(
+            0,
+        )
