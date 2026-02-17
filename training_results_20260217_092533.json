@@ -1,0 +1,24 @@
+[
+  {
+    "dataset": "Pubmed",
+    "status": "ok",
+    "test": [
+      {
+        "test_loss": 9.060908317565918,
+        "test_accuracy": 0.578000009059906
+      }
+    ],
+    "gpu": "cpu"
+  },
+  {
+    "dataset": "Cora",
+    "status": "ok",
+    "test": [
+      {
+        "test_loss": 1.9895861148834229,
+        "test_accuracy": 0.09799999743700027
+      }
+    ],
+    "gpu": "cpu"
+  }
+]

@@ -44,10 +44,10 @@ class OptunaTrainer:
         )
         ffn_dim = trial.suggest_categorical("ffn_dim", [16, 32, 64, 128, 256, 512])
         dropout_rate = trial.suggest_float("dropout_rate", 0.2, 0.7)
-        K = trial.suggest_int("K", 1, 10)
+        K = trial.suggest_int("K", 4, 10)
         base = trial.suggest_categorical("base", ["chebyshev", "monomial"])
         num_layers = trial.suggest_int("num_layers", 1, 3)
-        n_head = trial.suggest_categorical("n_head", [2, 4, 8, 16, 32])
+        n_head = trial.suggest_categorical("n_head", [2, 4, 8, 16])
         multi = trial.suggest_int("multi", 1, 4)
         q = trial.suggest_float("q", 0, 1)
 
@@ -102,7 +102,7 @@ class OptunaTrainer:
         # Final validation loss
         return trainer.callback_metrics["val_loss"].item()
 
-    def run_optimization(self, network_name, n_trials=20):
+    def run_optimization(self, network_name, n_trials=10):
         pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=10)
         study = optuna.create_study(direction="minimize", pruner=pruner)
         study.optimize(
