@@ -42,11 +42,14 @@ class OptunaTrainer:
         hidden_dim = trial.suggest_categorical(
             "hidden_dim", [16, 32, 64, 128, 256, 512]
         )
+        ffn_dim = trial.suggest_categorical("ffn_dim", [16, 32, 64, 128, 256, 512])
         dropout_rate = trial.suggest_float("dropout_rate", 0.2, 0.7)
         K = trial.suggest_int("K", 1, 10)
-        diffusion_type = trial.suggest_categorical(
-            "diffusion_type", ["chebyshev", "monomial"]
-        )
+        base = trial.suggest_categorical("base", ["chebyshev", "monomial"])
+        num_layers = trial.suggest_int("num_layers", 1, 3)
+        n_head = trial.suggest_categorical("n_head", [2, 4, 8, 16, 32])
+        multi = trial.suggest_int("multi", 1, 4)
+        q = trial.suggest_float("q", 0, 1)
 
         network = load_datasets([network_name])[network_name]
         network_info = _extract_network_info(network, network_name)
@@ -57,7 +60,12 @@ class OptunaTrainer:
             learning_rate=learning_rate,
             dropout_rate=dropout_rate,
             K=K,
-            diffusion_type=diffusion_type,
+            base=base,
+            ffn_dim=ffn_dim,
+            num_layers=num_layers,
+            n_head=n_head,
+            multi=multi,
+            q=q,
         )
 
         # Early stopping callback

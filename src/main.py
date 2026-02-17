@@ -63,7 +63,7 @@ def main():
 
     if gpu_count <= 0:
 
-        accelerator_map = {0: "cpu", 1: "mps"}
+        """accelerator_map = {0: "cpu", 1: "mps"}
         free_accelerators = [0, 1]
 
         processes = {}
@@ -91,7 +91,10 @@ def main():
         # wait for all processes to finish
         for p in list(processes.keys()):
             p.join()
-            processes.pop(p)
+            processes.pop(p)"""
+
+        for d in ALL_DATASETS:
+            train_job(d, "cpu", results)
 
     else:
         print(1)
