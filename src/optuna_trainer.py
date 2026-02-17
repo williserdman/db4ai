@@ -38,7 +38,7 @@ class OptunaTrainer:
 
     def _objective(self, trial, network_name):
         # Set the hyperparameters to optimize
-        learning_rate = trial.suggest_float("learning_rate", 1e-4, 1e-2)
+        learning_rate = trial.suggest_float("learning_rate", 1e-6, 1e-2)
         hidden_dim = trial.suggest_categorical(
             "hidden_dim", [16, 32, 64, 128, 256, 512]
         )
@@ -47,6 +47,7 @@ class OptunaTrainer:
         diffusion_type = trial.suggest_categorical(
             "diffusion_type", ["chebyshev", "monomial"]
         )
+        layers = trial.suggest_int("layers", 1, 3)
 
         network = load_datasets([network_name])[network_name]
         network_info = _extract_network_info(network, network_name)
@@ -58,11 +59,12 @@ class OptunaTrainer:
             dropout_rate=dropout_rate,
             K=K,
             diffusion_type=diffusion_type,
+            layers=layers,
         )
 
         # Early stopping callback
         early_stop_callback = EarlyStopping(
-            monitor="val_loss", patience=100, verbose=False, mode="min"
+            monitor="val_loss", patience=500, verbose=False, mode="min"
         )
 
         # Optuna pruning callback
@@ -124,7 +126,7 @@ class OptunaTrainer:
             save_dir=os.getcwd(), name=f"optuna_logs/best_params"
         )
         early_stop_callback = EarlyStopping(
-            monitor="val_loss", patience=100, verbose=False, mode="min"
+            monitor="val_loss", patience=500, verbose=False, mode="min"
         )
 
         # Creating the model with the best hyperparameters

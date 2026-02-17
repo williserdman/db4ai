@@ -71,7 +71,7 @@ class MyModel(
     def configure_optimizers(self) -> dict:  # type: ignore
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode="min", factor=0.1, patience=50
+            optimizer, mode="min", factor=0.5, patience=50
         )
         return {
             "optimizer": optimizer,

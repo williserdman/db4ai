@@ -64,7 +64,7 @@ def main():
     if gpu_count <= 0:
 
         accelerator_map = {0: "cpu", 1: "mps"}
-        free_accelerators = [0, 1]
+        free_accelerators = [1, 0]
 
         processes = {}
 
