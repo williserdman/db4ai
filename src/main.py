@@ -31,7 +31,7 @@ ALL_DATASETS = [
     "Minesweeper",
 ]
 
-ALL_DATASETS = ["Cora", "Pubmed", "squirrel", "chameleon"]  # , "Roman-empire"]
+ALL_DATASETS = ["Cora", "Pubmed"]  # "squirrel", "chameleon"]  # , "Roman-empire"]
 
 
 def train_job(network_name, gpu_id, results_list):
@@ -62,9 +62,37 @@ def main():
     results = manager.list()
 
     if gpu_count <= 0:
+
+        accelerator_map = {0: "cpu", 1: "mps"}
+        free_accelerators = [0, 1]
+
+        processes = {}
+
         # fallback: run sequentially on CPU
         for d in ALL_DATASETS:
-            train_job(d, "cpu", results)
+            # wait until a GPU is available
+            while not free_accelerators:
+                # poll running processes and reclaim finished GPUs
+                for p in list(processes.keys()):
+                    if not p.is_alive():
+                        p.join()
+                        free_accelerators.append(processes.pop(p))
+                if not free_accelerators:
+                    time.sleep(1)
+
+            gpu = free_accelerators.pop(0)
+            p = multiprocessing.Process(
+                target=train_job, args=(d, accelerator_map[gpu], results)
+            )
+            p.start()
+            processes[p] = gpu
+            # train_job(d, "cpu", results)
+
+        # wait for all processes to finish
+        for p in list(processes.keys()):
+            p.join()
+            processes.pop(p)
+
     else:
         print(1)
         free_gpus = list(range(gpu_count))

@@ -8,6 +8,7 @@ from loading.LightningGraphLoader import load_datasets
 from models.MyModel import MyModel
 from loading.DatasetInfo import DatasetInfo
 import torch
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 # stack overflow suggestion to fix this callback (as was built with lightning.pytorch and we use pytorch_lightning)
@@ -42,7 +43,10 @@ class OptunaTrainer:
             "hidden_dim", [16, 32, 64, 128, 256, 512]
         )
         dropout_rate = trial.suggest_float("dropout_rate", 0.2, 0.7)
-        K = trial.suggest_int("K", 1, 4)
+        K = trial.suggest_int("K", 1, 10)
+        diffusion_type = trial.suggest_categorical(
+            "diffusion_type", ["chebyshev", "monomial"]
+        )
 
         network = load_datasets([network_name])[network_name]
         network_info = _extract_network_info(network, network_name)
@@ -53,6 +57,7 @@ class OptunaTrainer:
             learning_rate=learning_rate,
             dropout_rate=dropout_rate,
             K=K,
+            diffusion_type=diffusion_type,
         )
 
         # Early stopping callback
@@ -89,7 +94,7 @@ class OptunaTrainer:
         # Final validation loss
         return trainer.callback_metrics["val_loss"].item()
 
-    def run_optimization(self, network_name, n_trials=10):
+    def run_optimization(self, network_name, n_trials=20):
         pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=10)
         study = optuna.create_study(direction="minimize", pruner=pruner)
         study.optimize(
@@ -128,7 +133,6 @@ class OptunaTrainer:
             **best_params,
             # layer_1_size=best_params['layer_1_size'],
             # layer_2_size=best_params['layer_2_size'],
-            # learning_rate=best_params["learning_rate"],
             # dropout_rate=best_params['dropout_rate']
         )
 

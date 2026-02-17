@@ -68,24 +68,17 @@ class MyModel(
         self.log("test_loss", loss)
         self.log("test_accuracy", acc)
 
-    def configure_optimizers(self, lr=1e-3):  # type: ignore
-
-        optimizer = torch.optim.AdamW(self.parameters(), lr=self.learning_rate)
-
-        """ total_steps = self.trainer.estimated_stepping_batches
-
-        scheduler = get_cosine_schedule_with_warmup(
-            optimizer,
-            num_warmup_steps=int(0.1 * total_steps),  # 10% warmup
-            num_training_steps=total_steps,
+    def configure_optimizers(self) -> dict:  # type: ignore
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode="min", factor=0.1, patience=50
         )
-
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": scheduler,
-                "interval": "step",  # Update scheduler every step (not every epoch)
-                "frequency": 1,
+                "monitor": "val_loss",  # Metric to monitor
+                "interval": "epoch",  # Usually 'epoch' for ReduceLROnPlateau
+                "frequency": 1,  # How often to call step()
             },
-        } """
-        return {"optimizer": optimizer}
+        }
