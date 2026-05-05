@@ -1,0 +1,5 @@
+two wrongly predicted nodes close to each other, possible that they share k hop neighbors. 
+
+when doing the repair have to repair their respective neighborhoods, choose the one with more error to repair first or some other heuristic.. confidence of the original network. less confident repair it first.jjjjj
+
+if one node is within khops of 2 or 3 incorrect nodes then ensure that the nodes are repaired only once. all the possible versions can be kept-keep latest.. final round update once. or average of repairs
