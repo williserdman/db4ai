@@ -1,154 +1,92 @@
-# db4ai workspace
+# db4ai
 
-This workspace contains two major codebases:
+A compact research workspace for graph-based learning experiments. The repo contains multiple subprojects and utilities used for training, analysis, and reproducibility of experiments.
 
-- [argon/BiGCN](argon/BiGCN): Graph rumor detection experiments and scripts.
-- [sulfur](sulfur): Graph learning experiments, Optuna training, and analysis notebooks/tools.
+Main components
 
-## Quick map
+- `argon/BiGCN`: legacy BiGCN rumor-detection code and related datasets.
+- `sulfur`: training pipelines, Optuna hyperparameter search, and analysis utilities (under `sulfur/src`).
+- `data`: processed and raw datasets used by experiments (relative to the repository root).
 
-- [argon/BiGCN](argon/BiGCN): Original BiGCN code and datasets.
-- [sulfur/src](sulfur/src): Training, models, loaders, and analysis utilities.
-- [data](data): Cached datasets and splits used by multiple experiments.
+Goals of this README
 
-## sulfur: training and experiments
+- Be runnable from any machine (no user-specific absolute paths).
+- Point to per-subproject dependency instructions.
+- Show common, repeatable commands using relative paths and virtual environments.
 
-Entry points and configuration:
+Prerequisites
 
-- Training orchestration: [sulfur/src/main.py](sulfur/src/main.py)
-- CLI/config helpers: [sulfur/src/args.py](sulfur/src/args.py)
-- Hyperparameter search: [sulfur/src/optuna_trainer.py](sulfur/src/optuna_trainer.py)
+- Python 3.8+ (3.9/3.10/3.11 recommended).
+- `pip` or `poetry` to manage Python dependencies.
+- Optional: CUDA + a compatible PyTorch installation if you want GPU training.
 
-Typical run flow:
+Installation (recommended)
 
-1. Select datasets and hyperparameters in [sulfur/src/main.py](sulfur/src/main.py).
-2. Run the training script (see [sulfur/pyproject.toml](sulfur/pyproject.toml) for dependencies).
-3. Analyze results and compare runs with logs in [sulfur/optuna_logs](sulfur/optuna_logs).
-
-## Extracted notebook tools
-
-Notebook logic was consolidated into reusable utilities under [sulfur/src/analysis](sulfur/src/analysis). Add [sulfur/src](sulfur/src) to your `PYTHONPATH` or `sys.path` to import them:
-
-- Feature repair (node embedding delta optimization): [sulfur/src/analysis/feature_repair.py](sulfur/src/analysis/feature_repair.py)
-- GAE and AE reconstruction helpers: [sulfur/src/analysis/reconstruction.py](sulfur/src/analysis/reconstruction.py)
-- Counterfactual edge tests: [sulfur/src/analysis/counterfactual.py](sulfur/src/analysis/counterfactual.py)
-- Shared accuracy helpers: [sulfur/src/analysis/metrics.py](sulfur/src/analysis/metrics.py)
-
-### CLI quick run
-
-Use the lightweight CLI to run the extracted tools without opening notebooks:
+1. Create and activate a virtual environment (from the repository root):
 
 ```bash
-PYTHONPATH=sulfur/src /Users/williserdman/Documents/school/Spring2026/db4ai/db4ai/.venv/bin/python -m analysis.cli \
+python3 -m venv .venv
+source .venv/bin/activate   # macOS / Linux
+```
+
+2. Install dependencies per subproject:
+
+````bash
+  pip install -r requirements.txt```
+````
+
+Data layout
+
+- The `data/` directory is used to store raw and processed datasets. Many scripts expect datasets at `data/<dataset-name>/...`.
+- If you keep datasets elsewhere, either create symlinks from `data/` to your dataset folder or set environment variables/CLI flags in the scripts to point to your dataset root.
+
+Running common commands
+
+- Use the repository root as your working directory and avoid absolute paths. Examples below assume the virtual environment is active.
+
+- Example: run the analysis CLI (feature repair) using `sulfur/src` as a module path:
+
+```bash
+# from repo root
+PYTHONPATH=sulfur/src python -m analysis.cli \
     --dataset ENGB \
-    --checkpoint sulfur/optuna_logs/best_params/version_2/checkpoints/epoch=529-step=530.ckpt \
+    --checkpoint path/to/checkpoint.pt \
     --mode feature-repair \
-    --plots-dir sulfur/optuna_logs/analysis_plots \
-    --trust-checkpoint
+    --plots-dir output/plots
 ```
 
-Other modes:
-
-- `feature-repair-all`: optimize a delta using all node labels (masked to the target set).
-- `gae-confidence`: train a GAE and report per-node reconstruction confidence stats.
-- `gae-khop-loss`: compute k-hop reconstruction loss around incorrect nodes.
-
-### CLI reference
-
-Basic usage:
+- Example: run a main training script located at `sulfur/src/main.py` (if available):
 
 ```bash
-PYTHONPATH=sulfur/src /Users/williserdman/Documents/school/Spring2026/db4ai/db4ai/.venv/bin/python \
-    -m analysis.cli --dataset DATASET --checkpoint PATH --mode feature-repair
+python -m src.main --help
 ```
 
-Core flags:
+Notes and tips
 
-- `--dataset`: dataset key passed to the loader (e.g., `ENGB`, `Cora`).
-- `--checkpoint`: path to a `MyModel` checkpoint.
-- `--mode`: `feature-repair`, `feature-repair-all`, `gae-confidence`, `gae-khop-loss`.
-- `--trust-checkpoint`: allow loading checkpoints that contain non-weight objects.
+- Prefer relative paths and project-local virtual environments; do not hard-code `/Users/...` paths.
+- Use `--help` on CLI entry points to learn available flags (e.g., `--plots-dir`, `--max-epochs`, `--lr`).
+- Many commands accept `--plots-dir` to save diagnostic plots and `--checkpoint` to load models.
 
-If you see `TypeError: cannot unpack non-iterable NoneType object`, re-run with:
+Project structure (quick reference)
 
-- `--max-epochs 1 --log-every 1` to keep the repair run minimal
-- `--plots-dir` to ensure plot outputs are enabled
+- `argon/` — legacy BiGCN code and helpers.
+- `data/` — datasets and processed files (shared by experiments).
+- `sulfur/` — main training/analysis code under `sulfur/src` and Optuna logs under `sulfur/optuna_logs`.
 
-Feature repair tuning:
+Contributing
 
-- `--max-epochs`, `--lr`, `--weight-decay`, `--log-every`
-- `--max-target-nodes`: cap number of incorrect nodes to repair.
-- `--l2-to-original`: regularize repaired features toward original values.
-- `--no-entropy-weighting`: disable entropy weighting for target loss.
+- If you add datasets, place them under `data/` or update loaders to accept a configurable data root.
+- Please open issues or PRs for reproducibility improvements, missing dependency notes, or clearer run scripts.
 
-Plots:
+License
 
-- `--plots-dir`: enable plot output (neighborhood before/after + feature drift).
-- `--target-node`: node id to visualize (defaults to first fixed/target node).
-- `--neighborhood-hops`: k-hop neighborhood depth for the plot.
+- No license is specified in this repository. Add a LICENSE file if you intend to publish or share the code publicly.
 
-When `--plots-dir` is provided, the CLI will emit:
+If you want, I can also:
 
-- `neighborhood_<node>_<k>hop.png`: before/after correctness in the k-hop subgraph.
-- `feature_drift_hist.png`: L2 drift histogram for target nodes.
-- `feature_pca_before_after.png`: PCA scatter of target features before/after repair.
+- Add step-by-step run examples for a specific subproject (e.g., full training command for `sulfur`).
+- Create a minimal `Makefile` or `scripts/` helpers to standardize common commands.
 
-### Example: feature repair
+---
 
-```python
-from analysis import FeatureRepairConfig, repair_features_overfit
-
-config = FeatureRepairConfig(max_epochs=500, lr=0.1, use_entropy_weighting=True)
-result = repair_features_overfit(model, graph_data, config)
-
-print(result.metrics_base)
-print(result.best_state["metrics"])
-```
-
-### Example: GAE reconstruction scoring
-
-```python
-from analysis import GAEConfig, train_gae, compute_node_recon_confidence
-
-gae = train_gae(graph_data.x, graph_data.edge_index, GAEConfig())
-node_conf = compute_node_recon_confidence(gae, graph_data.x, graph_data.edge_index)
-```
-
-### Example: counterfactual edge witnesses
-
-```python
-from analysis import find_counterfactual_witnesses
-
-witnesses = find_counterfactual_witnesses(
-    model=model,
-    graph_data=graph_data,
-    wrong_nodes=wrong_nodes,
-    ground_truth=graph_data.y,
-    predictions=predictions,
-    probs=probs,
-    ae_node_err=ae_node_err,
-    graph_nx=G,
-    top_neighbors_to_test=5,
-)
-```
-
-## data layout
-
-The [data](data) directory stores cached datasets and splits. Many scripts expect these datasets to exist locally. If you add new datasets, follow the same folder layout.
-
-## Notebooks
-
-Original exploration notebooks remain in [sulfur/src/notebooks](sulfur/src/notebooks) for reference. The core logic is now in [sulfur/src/analysis](sulfur/src/analysis).
-
-## Future Work
-
-This is extremely dependent on finding a dataset which fits the following limitations:
-
-- needs raw features data (messages in plain text format for interpretation)
-- graph structure
-
-This has been rather challenging to find. Below I outline three potential paths forward:
-
-1. scrape ourselves, one potential option is to scrape the data ourselves. it seems that generally there are not a set of datasets that fit our needs. scraping them ourselves could be a good avenue to publish a dataset and work with it for this project
-2. knowledge graphs. the structure of these types of graphs is different than interaction graphs, however, there may be an avenue to explore here with graphs that are well labelled and have explicit plain text features
-3. a promising avenue forward seems to be the combination of some twitter datasets. seen in the `argon` folder above the BiGCN paper created a graph datastructure of tweets. the original Twitter15/16 dataset from Kaggle can be combined with this one to get rich node labels. two key limitaitons here: firstly, there is not full coverage of the dataset, BiGCN nodes don't match the Kaggle nodes fully. secondly, the dataset is set up in many isolated tree like structures (like root post, then replies) rather than one cohesive graph.
+Updated to remove absolute, machine-specific paths and to use relative commands and virtual environments.

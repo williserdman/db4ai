@@ -134,6 +134,19 @@ def compute_node_recon_confidence(
     return node_avg_conf
 
 
+def compute_node_ae_error(
+    model_ae: StandardAutoencoder,
+    x: torch.Tensor,
+    device: Optional[torch.device] = None,
+) -> torch.Tensor:
+    device = device or next(model_ae.parameters()).device
+    model_ae.eval()
+    with torch.no_grad():
+        recon = model_ae(x.to(device))
+        err = (recon - x.to(device)).pow(2).mean(dim=1)
+    return err
+
+
 def reconstruct_edges_by_threshold(
     edge_index: torch.Tensor,
     edge_probs: torch.Tensor,
