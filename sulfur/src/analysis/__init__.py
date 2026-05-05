@@ -17,10 +17,21 @@ __all__ = [
     "train_autoencoder",
     "train_gae",
     "compute_node_recon_confidence",
+    "compute_node_ae_error",
     "reconstruct_edges_by_threshold",
     "gae_k_hop_recon_loss",
     "remove_edge_both_directions",
     "find_counterfactual_witnesses",
+    "BowConfig",
+    "BowEmbedder",
+    "HFEmbedder",
+    "TextEmbeddingIndex",
+    "TextEmbeddingResult",
+    "embed_texts",
+    "update_embeddings_for_nodes",
+    "build_text_index",
+    "ArgonGraph",
+    "load_argon_graph",
 ]
 
 _EXPORTS = {
@@ -40,10 +51,22 @@ _EXPORTS = {
         "train_autoencoder",
         "train_gae",
         "compute_node_recon_confidence",
+        "compute_node_ae_error",
         "reconstruct_edges_by_threshold",
         "gae_k_hop_recon_loss",
     },
     "counterfactual": {"remove_edge_both_directions", "find_counterfactual_witnesses"},
+    "text_embeddings": {
+        "BowConfig",
+        "BowEmbedder",
+        "HFEmbedder",
+        "TextEmbeddingIndex",
+        "TextEmbeddingResult",
+        "embed_texts",
+        "update_embeddings_for_nodes",
+        "build_text_index",
+    },
+    "argon_adapter": {"ArgonGraph", "load_argon_graph"},
 }
 
 
