@@ -1,0 +1,3 @@
+[submodule "argon/BiGCN"]
+	path = argon/BiGCN
+	url = https://github.com/TianBian95/BiGCN
